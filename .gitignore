@@ -1,0 +1,23 @@
+# Docker
+*.log
+docker-volume-*/
+
+# Packages & Tools
+dist/
+build/
+.coverage
+.pytest_cache/
+.envrc
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# Packages & Tools
+dist/
+build/
+.coverage
+.pytest_cache/
+.envrc
