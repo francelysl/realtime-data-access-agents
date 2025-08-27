@@ -14,10 +14,3 @@ __pycache__/
 *.pyc
 .venv/
 .env
-
-# Packages & Tools
-dist/
-build/
-.coverage
-.pytest_cache/
-.envrc
