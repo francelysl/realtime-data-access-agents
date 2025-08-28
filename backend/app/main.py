@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .settings import settings
-from .routers import health
+from .routers import health,query
 
 app = FastAPI(title=settings.APP_NAME)
 
@@ -14,3 +14,4 @@ app.add_middleware(
 )
 
 app.include_router(health.router, prefix=settings.API_PREFIX)
+app.include_router(query.router,  prefix=settings.API_PREFIX)
