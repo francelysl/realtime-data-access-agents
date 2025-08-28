@@ -1,0 +1,13 @@
+{
+    "name": "srta-agents-root",
+    "private": true,
+    "version": "0.1.0",
+    "scripts": {
+        "dev:be": "cd backend && uvicorn app.main:app --reload",
+        "dev: fe": "cd frontend && npm run dev",
+        "dev:all": "concurrently -k \"npm:dev:be\" \"npm:dev:fe\""
+    },
+    "devDependencies": {
+        "concurrently": "8.2.2"
+    }
+}
