@@ -20,6 +20,18 @@ services:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+  backend:
+    build:
+      context: .
+      dockerfile: docker/backend.Dockerfile
+    environment:
+      ENV: "docker"
+      REDIS_URL: "redis://redis:6379/0"
+    depends_on:
+      - redis
+      - postgres
+    ports:
+      - "8000:8000"
 
 volumes:
   pgdata:
