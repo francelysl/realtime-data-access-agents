@@ -1,0 +1,59 @@
+services:
+  airflow-postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow_pw
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  airflow-init:
+    image: apache/airflow:2.9.3
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    env_file:
+      - etl/.env.airflow      
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_pw@airflow-postgres:5432/airflow
+      _AIRFLOW_DB_UPGRADE: "true"
+      _AIRFLOW_WWW_USER_CREATE: "true"
+      _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USER:-admin}
+      _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-admin}
+      _AIRFLOW_WWW_USER_EMAIL: ${AIRFLOW_ADMIN_EMAIL:-admin@example.com}
+    volumes:
+      - ./etl/dags:/opt/airflow/dags
+      - ./etl/requirements.txt:/requirements.txt
+    command: >
+      bash -c "
+      pip install --no-cache-dir -r /requirements.txt &&
+      airflow db migrate &&
+      airflow users create --role Admin --username ${AIRFLOW_ADMIN_USER:-admin} --password ${AIRFLOW_ADMIN_PASSWORD:-admin} --email ${AIRFLOW_ADMIN_EMAIL:-admin@example.com} --firstname Air --lastname Flow || true
+      "
+
+  airflow-scheduler:
+    image: apache/airflow:2.9.3
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+    env_file:
+      - etl/.env.airflow
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_pw@airflow-postgres:5432/airflow
+      SRTA_DB_URI: ${SRTA_DB_URI}
+    volumes:
+      - ./etl/dags:/opt/airflow/dags
+      - ./etl/requirements.txt:/requirements.txt
+      - ./data:/opt/airflow/data
+    command: >
+      bash -c "pip install --no-cache-dir -r /requirements.txt && airflow scheduler"
+
+  
