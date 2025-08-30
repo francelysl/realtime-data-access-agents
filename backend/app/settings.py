@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     API_PREFIX: str = "/api/v1"
     ENV: str = "local"
     REDIS_URL: str = "redis://redis:6379/0"
+    ENABLE_AGENT: bool = False
 
     class Config:
         env_file = ".env"
