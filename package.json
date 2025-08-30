@@ -8,6 +8,8 @@
         "dev:all": "concurrently -k \"npm:dev:be\" \"npm:dev:fe\""
     },
     "devDependencies": {
+        "@types/node": "^24.3.0",
+        "@types/react": "^19.1.12",
         "concurrently": "8.2.2"
     }
 }
