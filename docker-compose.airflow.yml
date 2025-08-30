@@ -19,7 +19,7 @@ services:
       airflow-postgres:
         condition: service_healthy
     env_file:
-      - etl/.env.airflow      
+      - etl/.env.airflow             
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_pw@airflow-postgres:5432/airflow
       _AIRFLOW_DB_UPGRADE: "true"
@@ -44,17 +44,19 @@ services:
         condition: service_healthy
       airflow-init:
         condition: service_completed_successfully
+      postgres:                        
+        condition: service_started
     env_file:
       - etl/.env.airflow
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_pw@airflow-postgres:5432/airflow
-      SRTA_DB_URI: ${SRTA_DB_URI}
     volumes:
       - ./etl/dags:/opt/airflow/dags
       - ./etl/requirements.txt:/requirements.txt
       - ./data:/opt/airflow/data
     command: >
       bash -c "pip install --no-cache-dir -r /requirements.txt && airflow scheduler"
+
   airflow-webserver:
     image: apache/airflow:2.9.3
     depends_on:
@@ -62,11 +64,12 @@ services:
         condition: service_healthy
       airflow-init:
         condition: service_completed_successfully
+      postgres:
+        condition: service_started
     env_file:
       - etl/.env.airflow
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_pw@airflow-postgres:5432/airflow
-      SRTA_DB_URI: ${SRTA_DB_URI}
     volumes:
       - ./etl/dags:/opt/airflow/dags
       - ./etl/requirements.txt:/requirements.txt
@@ -78,4 +81,3 @@ services:
 
 volumes:
   airflow-pgdata:
-  
