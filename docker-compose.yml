@@ -37,6 +37,7 @@ services:
     environment:
       ENV: "docker"
       REDIS_URL: "redis://redis:6379/0"
+      ENABLE_AGENT: "true" 
     depends_on:
       - redis
       - postgres

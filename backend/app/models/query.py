@@ -10,3 +10,4 @@ class QueryResponse(BaseModel):
     reason: str
     rows: int = 0
     data_preview: list[dict] | None = None
+    agent_rationale: str | None = None  
