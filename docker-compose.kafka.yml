@@ -38,3 +38,14 @@ services:
     depends_on:
       redpanda:
         condition: service_healthy
+
+  producer:
+    build:
+      context: .
+      dockerfile: docker/producer.Dockerfile
+    environment:
+      KAFKA_BOOTSTRAP: "redpanda:9092"
+      KAFKA_TOPIC: "trades.events"
+    depends_on:
+      redpanda:
+        condition: service_healthy
