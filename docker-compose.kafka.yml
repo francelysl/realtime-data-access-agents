@@ -49,3 +49,18 @@ services:
     depends_on:
       redpanda:
         condition: service_healthy
+
+  consumer:
+    build:
+      context: .
+      dockerfile: docker/consumer.Dockerfile
+    environment:
+      KAFKA_BOOTSTRAP: "redpanda:9092"
+      KAFKA_TOPIC: "trades.events"
+      KAFKA_GROUP: "trades-consumers"
+      SRTA_DB_URI: "postgresql://srta:srta_pw@postgres:5432/srta"
+    depends_on:
+      redpanda:
+        condition: service_healthy
+      postgres:
+        condition: service_started

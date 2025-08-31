@@ -8,7 +8,7 @@ log = logging.getLogger("consumer")
 BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP", "redpanda:9092")
 TOPIC = os.getenv("KAFKA_TOPIC", "trades.events")
 GROUP = os.getenv("KAFKA_GROUP", "trades-consumers")
-PG_URI = os.getenv("SRTA_DB_URI", "postgresql://srta:srta_pw@postgres:5432/srta")
+PG_URI = os.getenv("SRTA_DB_URI", "postgresql://srta:srta_pw@postgres:5432/srta")  # psycopg form
 
 UPSERT_SQL = """
 INSERT INTO trades (ext_id, symbol, price, qty, ts)
