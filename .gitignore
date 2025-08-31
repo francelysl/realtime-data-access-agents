@@ -32,5 +32,8 @@ docker-volume-*/etl/.env.airflow
 # Airflow env (secrets)
 etl/.env.airflow
 
+# Allow example file
+!etl/.env.airflow.example
+
 # Airflow env (secrets)
 etl/.env.airflow
