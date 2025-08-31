@@ -1,6 +1,7 @@
 services:
   airflow-postgres:
     image: postgres:15-alpine
+    container_name: airflow-postgres
     environment:
       POSTGRES_USER: airflow
       POSTGRES_PASSWORD: airflow_pw
@@ -10,16 +11,18 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
       interval: 5s
-      timeout: 3s
+      timeout: 5s
       retries: 20
 
+  # One-shot initializer to install Python deps, migrate DB and create admin user
   airflow-init:
     image: apache/airflow:2.9.3
+    container_name: airflow-init
     depends_on:
       airflow-postgres:
         condition: service_healthy
     env_file:
-      - etl/.env.airflow             
+      - etl/.env.airflow
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_pw@airflow-postgres:5432/airflow
       _AIRFLOW_DB_UPGRADE: "true"
@@ -27,49 +30,48 @@ services:
       _AIRFLOW_WWW_USER_USERNAME: ${AIRFLOW_ADMIN_USER:-admin}
       _AIRFLOW_WWW_USER_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-admin}
       _AIRFLOW_WWW_USER_EMAIL: ${AIRFLOW_ADMIN_EMAIL:-admin@example.com}
+      AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW__CORE__LOAD_EXAMPLES:-False}
     volumes:
       - ./etl/dags:/opt/airflow/dags
       - ./etl/requirements.txt:/requirements.txt
     command: >
-      bash -c "
-      pip install --no-cache-dir -r /requirements.txt &&
-      airflow db migrate &&
-      airflow users create --role Admin --username ${AIRFLOW_ADMIN_USER:-admin} --password ${AIRFLOW_ADMIN_PASSWORD:-admin} --email ${AIRFLOW_ADMIN_EMAIL:-admin@example.com} --firstname Air --lastname Flow || true
-      "
+      bash -c "pip install --no-cache-dir -r /requirements.txt &&
+               airflow db migrate &&
+               airflow users create --role Admin --username ${AIRFLOW_ADMIN_USER:-admin} --password ${AIRFLOW_ADMIN_PASSWORD:-admin} --email ${AIRFLOW_ADMIN_EMAIL:-admin@example.com} --firstname Air --lastname Flow || true"
 
   airflow-scheduler:
     image: apache/airflow:2.9.3
+    container_name: airflow-scheduler
     depends_on:
       airflow-postgres:
         condition: service_healthy
       airflow-init:
         condition: service_completed_successfully
-      postgres:                        
-        condition: service_started
     env_file:
       - etl/.env.airflow
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_pw@airflow-postgres:5432/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW__CORE__LOAD_EXAMPLES:-False}
     volumes:
       - ./etl/dags:/opt/airflow/dags
       - ./etl/requirements.txt:/requirements.txt
-      - ./data:/opt/airflow/data
+      - ./data:/opt/airflow/data     # shared with DAGs (CSV, exports, etc.)
     command: >
       bash -c "pip install --no-cache-dir -r /requirements.txt && airflow scheduler"
 
   airflow-webserver:
     image: apache/airflow:2.9.3
+    container_name: airflow-webserver
     depends_on:
       airflow-postgres:
         condition: service_healthy
       airflow-init:
         condition: service_completed_successfully
-      postgres:
-        condition: service_started
     env_file:
       - etl/.env.airflow
     environment:
       AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow_pw@airflow-postgres:5432/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: ${AIRFLOW__CORE__LOAD_EXAMPLES:-False}
     volumes:
       - ./etl/dags:/opt/airflow/dags
       - ./etl/requirements.txt:/requirements.txt
