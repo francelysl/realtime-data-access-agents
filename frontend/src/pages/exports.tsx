@@ -1,77 +1,126 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-/**
- * Configure your backend base URL via NEXT_PUBLIC_API_BASE
- * Example: http://localhost:8000  (no trailing /api/v1 here; we add full path below)
- */
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
 
+type ExportItem = {
+  key: string;
+  size: number;
+  last_modified: string; // ISO string from FastAPI
+};
+
 export default function Exports() {
-  const [url, setUrl] = useState<string | null>(null);
+  const [date, setDate] = useState<string>(() => new Date().toISOString().slice(0, 10));
+  const [items, setItems] = useState<ExportItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  async function getPresigned() {
+  async function fetchList(d: string) {
     setLoading(true);
     setErr(null);
-    setUrl(null);
     try {
-      // Must match the key naming from your Airflow DAG
-      const dt = new Date().toISOString().slice(0, 10);
-      const key = `exports/trades/dt=${dt}/trades_${dt}.parquet`;
-
-      const res = await fetch(
-        `${API_BASE}/api/v1/exports/presign?key=${encodeURIComponent(key)}&expires_in=600`
-      );
+      const res = await fetch(`${API_BASE}/api/v1/exports/list?date=${encodeURIComponent(d)}`);
       if (!res.ok) {
         const txt = await res.text();
         throw new Error(`${res.status} ${res.statusText} - ${txt}`);
       }
-      const data = await res.json();
-      setUrl(data.url);
+      const data = await res.json() as { items: ExportItem[] };
+      setItems(data.items || []);
     } catch (e: any) {
-      setErr(e.message ?? "Failed to fetch presigned URL");
+      setErr(e.message ?? "Failed to list exports");
     } finally {
       setLoading(false);
     }
   }
 
+  useEffect(() => { fetchList(date); }, [date]);
+
+  async function download(key: string) {
+    try {
+      const r = await fetch(`${API_BASE}/api/v1/exports/presign?key=${encodeURIComponent(key)}&expires_in=600`);
+      if (!r.ok) {
+        const txt = await r.text();
+        throw new Error(`${r.status} ${r.statusText} - ${txt}`);
+      }
+      const data = await r.json();
+      window.open(data.url, "_blank", "noopener,noreferrer");
+    } catch (e: any) {
+      alert(e.message ?? "Failed to presign");
+    }
+  }
+
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-100 text-gray-900 p-6">
-      <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-xl">
-        <h1 className="text-2xl font-bold mb-2">SRTA Exports</h1>
-        <p className="text-sm text-gray-600 mb-6">
-          Generate a short-lived presigned URL for today’s trades Parquet and download it.
-        </p>
+      <div className="bg-white shadow-xl rounded-2xl p-8 w-full max-w-4xl">
+        <div className="flex items-center justify-between mb-6 gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">SRTA Exports</h1>
+            <p className="text-sm text-gray-600">
+              Browse partitioned Parquet exports and download via presigned URL.
+            </p>
+          </div>
+          <a href="/" className="text-sm text-gray-700 underline">← Back to Query Dashboard</a>
+        </div>
 
-        <button
-          onClick={getPresigned}
-          disabled={loading}
-          className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-800 disabled:opacity-50"
-        >
-          {loading ? "Fetching..." : "Get Today’s Export"}
-        </button>
-
-        {url && (
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block mt-4 text-blue-600 underline break-all"
+        <div className="flex items-center gap-3 mb-4">
+          <label className="text-sm text-gray-700">Date</label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="border rounded-lg px-3 py-2"
+          />
+          <button
+            onClick={() => fetchList(date)}
+            className="px-3 py-2 text-sm rounded-lg border bg-gray-50 hover:bg-gray-100"
           >
-            Download Parquet
-          </a>
+            Refresh
+          </button>
+        </div>
+
+        {loading && <p>Loading…</p>}
+        {err && <p className="text-red-600">{err}</p>}
+
+        {!loading && !err && items.length === 0 && (
+          <p className="text-gray-600">No objects found for {date}.</p>
         )}
 
-        {err && <p className="mt-4 text-red-600">{err}</p>}
+        {items.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-gray-50">
+                  <th className="text-left p-2 border-b">Key</th>
+                  <th className="text-left p-2 border-b">Size (bytes)</th>
+                  <th className="text-left p-2 border-b">Last Modified (UTC)</th>
+                  <th className="text-left p-2 border-b">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((it) => (
+                  <tr key={it.key} className="hover:bg-gray-50">
+                    <td className="p-2 border-b break-all">{it.key}</td>
+                    <td className="p-2 border-b">{it.size}</td>
+                    <td className="p-2 border-b">{new Date(it.last_modified).toISOString()}</td>
+                    <td className="p-2 border-b">
+                      <button
+                        onClick={() => download(it.key)}
+                        className="px-3 py-1 rounded bg-black text-white hover:bg-gray-800"
+                      >
+                        Download
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
         <div className="mt-6 text-xs text-gray-500">
           <p><b>Backend:</b> {API_BASE}</p>
-          <p><b>Tip:</b> Make sure Airflow ran <code>trades_to_s3_parquet</code> for today first.</p>
-        </div>
-
-        <div className="mt-6">
-          <a href="/" className="text-sm text-gray-700 underline">← Back to Query Dashboard</a>
+          <p>
+            Objects are expected under <code>s3://$&#123;S3_BUCKET&#125;/$&#123;S3_PREFIX&#125;/dt=YYYY-MM-DD/</code>.
+          </p>
         </div>
       </div>
     </main>

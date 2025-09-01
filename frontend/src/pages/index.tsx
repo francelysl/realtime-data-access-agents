@@ -107,6 +107,11 @@ export default function Home() {
         <p style={{ color: "#555", marginTop: 6 }}>
           Demo dashboard — send preview queries, see guardrails & agent help.
         </p>
+        <p style={{ marginTop: 8 }}>
+          <a href="/exports" style={{ color: "#2563eb", textDecoration: "underline" }}>
+            Go to Exports →
+          </a>
+        </p>
       </header>
 
       {/* Health Card */}
