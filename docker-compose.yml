@@ -30,17 +30,17 @@ services:
       - "3000:3000"
   backend:
     build:
-      context: .
-      dockerfile: docker/backend.Dockerfile
-    environment:
-      ENV: "docker"
-      REDIS_URL: "redis://redis:6379/0"
-      ENABLE_AGENT: "true" 
-    depends_on:
-      - redis
-      - postgres
+      context: ./backend
+      dockerfile: Dockerfile  
+    image: realtime-data-access-agents-backend
     ports:
       - "8000:8000"
+    env_file:
+      - etl/.env.airflow
+    environment:
+      - AWS_ENDPOINT_URL=${AWS_ENDPOINT_URL:-http://localstack:4566}
+    depends_on:
+      - postgres
 
 volumes:
   pgdata:
