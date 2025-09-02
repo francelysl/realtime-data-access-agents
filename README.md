@@ -97,3 +97,45 @@ flowchart TD
 
 4. **Connections**:
    - `-->` defines the relationships between components.
+
+## Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    participant U as User (Dashboard)
+    participant W as Web (Next.js)
+    participant A as API (FastAPI)
+    participant DB as PostgreSQL
+    participant AG as Agent
+    participant S3 as S3 Export
+
+    U->>W: Submit query
+    W->>A: POST /query
+    A->>AG: Rewrite / validate SQL
+    AG-->>A: Rationale + safe SQL
+    A->>DB: Execute limited query
+    DB-->>A: Return rows
+    A->>W: Results + rationale
+    U->>W: Request export
+    W->>A: POST /exports
+    A->>S3: Store dataset
+    S3-->>U: Download link
+
+```
+
+### Explanation:
+1. **`sequenceDiagram`**:
+   - Defines a sequence diagram.
+
+2. **`title`**:
+   - Adds a title to the diagram (`Sequence Diagram`).
+
+3. **Participants**:
+   - `User (Dashboard)`, `Web (Next.js)`, `API (FastAPI)`, `Agent`, `PostgreSQL`, and `S3 Export` represent the entities involved in the sequence.
+
+4. **Arrows**:
+   - `->>`: Represents a message sent from one participant to another.
+   - `-->>`: Represents a response or return message.
+
+5. **Steps**:
+   - Each step in the sequence is represented as a message or response between participants.
