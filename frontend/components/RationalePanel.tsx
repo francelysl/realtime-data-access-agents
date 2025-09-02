@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 
 export default function RationalePanel({ text }: { text?: string | null }) {
+  const [open, setOpen] = useState(true); // hook first, always
+
   if (!text) return null;
-  const [open, setOpen] = useState(true);
 
   return (
     <section

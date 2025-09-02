@@ -1,0 +1,24 @@
+# backend/Dockerfile.api
+FROM python:3.13-slim AS base
+
+# System deps for psycopg (and general build)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gcc build-essential libpq-dev curl && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Install only the API requirements (not full Airflow stack)
+COPY backend/requirements.api.txt ./requirements.api.txt
+RUN pip install --no-cache-dir -r requirements.api.txt
+
+# Copy only the backend app code
+COPY backend/app ./app
+
+# Env that help FastAPI / Uvicorn
+ENV PYTHONUNBUFFERED=1 \
+    UVICORN_HOST=0.0.0.0 \
+    UVICORN_PORT=8000
+
+# Default command
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

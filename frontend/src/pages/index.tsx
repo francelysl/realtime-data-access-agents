@@ -1,3 +1,4 @@
+// frontend/src/pages/index.tsx
 import { useEffect, useMemo, useState } from "react";
 import CardNav from "../../components/CardNav";
 import RationalePanel from "../../components/RationalePanel";

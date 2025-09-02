@@ -88,7 +88,6 @@ export default function Exports() {
   return (
     <div className="min-h-screen bg-[#F3F4F6]">
       <CardNav
-        logo="/logo.svg"
         items={navItems}
         baseColor="#fff"
         menuColor="#000"

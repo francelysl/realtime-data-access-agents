@@ -1,0 +1,10 @@
+# global ignore for docker context
+.git
+.gitignore
+**/__pycache__/
+**/*.py[cod]
+**/.venv*
+node_modules
+.env*
+.dockerignore
+.airflow/

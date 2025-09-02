@@ -17,8 +17,10 @@ type NavItem = {
 };
 
 type Props = {
+  title?: string;
   items: NavItem[];
   className?: string;
+  headerTextColor?: string;
   ease?: string;
   baseColor?: string;
   menuColor?: string;
@@ -26,6 +28,8 @@ type Props = {
   buttonTextColor?: string;
   ctaHref?: string;
   ctaLabel?: string;
+  gradientFrom?: string;
+  gradientTo?: string;
 };
 
 const CardNav = ({
