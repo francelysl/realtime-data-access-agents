@@ -59,3 +59,41 @@ Frontend UI → http://localhost:3000
 docker compose down -v
 ```
 
+## High Level Architecture
+
+```mermaid
+flowchart TD
+    subgraph Frontend [Next.js Frontend]
+      UI[Dashboard + Rationale Panel]
+    end
+
+    subgraph Backend [FastAPI Backend]
+      API[/Query + Export Routers/]
+      Repo[QueryRepo + Guardrails]
+      Agent[Rewrite Agent + Budget Checks]
+    end
+
+    DB[(PostgreSQL)]
+    Cache[(Redis)]
+    S3[(Localstack S3 or AWS S3)]
+
+    UI --> API
+    API --> Repo
+    Repo --> DB
+    Repo --> Cache
+    API --> Agent
+    API --> S3
+```
+
+### Explanation:
+1. **`flowchart TD`**:
+   - `TD` specifies a **top-to-bottom** layout for the flowchart.
+
+2. **`subgraph`**:
+   - Groups related components together (e.g., `Frontend` and `Backend`).
+
+3. **Nodes**:
+   - `UI`, `API`, `Repo`, `Agent`, `DB`, `Cache`, and `S3` represent the components of your architecture.
+
+4. **Connections**:
+   - `-->` defines the relationships between components.
