@@ -1,0 +1,54 @@
+name: deploy-staging
+
+on:
+  workflow_dispatch:
+  push:
+    tags: [ "v*" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # optional: login to GHCR and pass creds file to server
+      - name: GHCR login
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create docker config archive
+        run: |
+          mkdir -p /tmp/.docker
+          echo "${{ steps.ghcr-login.outputs.docker_config }}" > /tmp/.docker/config.json || true
+          tar czf /tmp/dockerconfig.tgz -C /tmp .docker
+
+      - name: Copy docker credentials to server
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          source: "/tmp/dockerconfig.tgz"
+          target: "/tmp"
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            cd /opt/srta/app
+
+            # Install docker config for GHCR pulls
+            mkdir -p ~/.docker
+            tar xzf /tmp/dockerconfig.tgz -C ~/
+
+            docker compose --env-file .env.compose pull
+            docker compose --env-file .env.compose up -d
+            docker image prune -f
+            echo "Deployed at: $(date -u)"

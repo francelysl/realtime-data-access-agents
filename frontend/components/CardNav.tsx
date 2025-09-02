@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { GoArrowUpRight } from "react-icons/go";
 import Link from "next/link";
@@ -49,18 +49,21 @@ const CardNav = ({
   const cardsRef = useRef<HTMLDivElement[]>([]);
   const tlRef = useRef<gsap.core.Timeline | null>(null);
 
-  const calculateHeight = () => {
-    const navEl = navRef.current as HTMLDivElement | null;
+  const setCardRef = (i: number) => (el: HTMLDivElement | null) => {
+    if (el) cardsRef.current[i] = el;
+  };
+
+  const calculateHeight = useCallback(() => {
+    const navEl = navRef.current;
     if (!navEl) return 260;
+
     const isMobile = window.matchMedia("(max-width: 768px)").matches;
     if (isMobile) {
-      const contentEl = navEl.querySelector(
-        ".card-nav-content"
-      ) as HTMLDivElement | null;
+      const contentEl = navEl.querySelector(".card-nav-content") as HTMLElement | null;
       if (contentEl) {
         const was = {
           visibility: contentEl.style.visibility,
-          pointer: contentEl.style.pointerEvents,
+          pointerEvents: contentEl.style.pointerEvents,
           position: contentEl.style.position,
           height: contentEl.style.height,
         };
@@ -68,41 +71,31 @@ const CardNav = ({
         contentEl.style.pointerEvents = "auto";
         contentEl.style.position = "static";
         contentEl.style.height = "auto";
-        // force reflow
-        // eslint-disable-next-line no-unused-expressions
+        // force layout
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions
         contentEl.offsetHeight;
         const topBar = 60;
         const padding = 16;
         const contentHeight = contentEl.scrollHeight;
-        contentEl.style.visibility = was.visibility;
-        contentEl.style.pointerEvents = was.pointer;
-        contentEl.style.position = was.position;
-        contentEl.style.height = was.height;
+        Object.assign(contentEl.style, was);
         return topBar + contentHeight + padding;
       }
     }
     return 260;
-  };
+  }, []);
 
-  const createTimeline = () => {
+  const createTimeline = useCallback(() => {
     const navEl = navRef.current;
     if (!navEl) return null;
+
     gsap.set(navEl, { height: 60, overflow: "hidden" });
     gsap.set(cardsRef.current, { y: 50, opacity: 0 });
 
     const tl = gsap.timeline({ paused: true });
-    tl.to(navEl, {
-      height: calculateHeight,
-      duration: 0.4,
-      ease,
-    });
-    tl.to(
-      cardsRef.current,
-      { y: 0, opacity: 1, duration: 0.4, ease, stagger: 0.08 },
-      "-=0.1"
-    );
+    tl.to(navEl, { height: calculateHeight, duration: 0.4, ease });
+    tl.to(cardsRef.current, { y: 0, opacity: 1, duration: 0.4, ease, stagger: 0.08 }, "-=0.1");
     return tl;
-  };
+  }, [calculateHeight, ease]);
 
   useLayoutEffect(() => {
     const tl = createTimeline();
@@ -111,8 +104,7 @@ const CardNav = ({
       tl?.kill();
       tlRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ease, items]);
+  }, [createTimeline, items]);
 
   useLayoutEffect(() => {
     const handleResize = () => {
@@ -134,8 +126,7 @@ const CardNav = ({
     };
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isExpanded]);
+  }, [isExpanded, calculateHeight, createTimeline]);
 
   const toggleMenu = () => {
     const tl = tlRef.current;
@@ -150,12 +141,6 @@ const CardNav = ({
       tl.reverse();
     }
   };
-
-  const setCardRef =
-    (i: number) =>
-    (el: HTMLDivElement | null): void => {
-      if (el) cardsRef.current[i] = el;
-    };
 
   return (
     <div

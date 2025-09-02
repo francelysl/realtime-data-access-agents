@@ -1,17 +1,28 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import NoSuchModuleError
 
-PG_USER = os.getenv("POSTGRES_USER", "srta")
-PG_PW = os.getenv("POSTGRES_PASSWORD", "srta_pw")
-PG_DB = os.getenv("POSTGRES_DB", "srta")
-PG_HOST = os.getenv("POSTGRES_HOST", "postgres")
-PG_PORT = os.getenv("POSTGRES_PORT", "5432")
+DATABASE_URL = os.environ.get("SRTA_DB_URI", "sqlite+pysqlite:///./srta.db")
 
-DATABASE_URL = f"postgresql+psycopg://{PG_USER}:{PG_PW}@{PG_HOST}:{PG_PORT}/{PG_DB}"
+def _make_engine(url: str):
+    return create_engine(url, pool_pre_ping=True, future=True)
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True, future=True)
+try:
+    engine = _make_engine(DATABASE_URL)
+except NoSuchModuleError as e:
+    # SQLAlchemy 1.4 doesn’t know "postgresql.psycopg"
+    if "postgresql.psycopg" in str(e) and "postgresql+psycopg" in DATABASE_URL:
+        fallback_url = DATABASE_URL.replace("postgresql+psycopg", "postgresql+psycopg2")
+        engine = _make_engine(fallback_url)
+    else:
+        raise
+
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
 def get_session():
-    return SessionLocal()
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

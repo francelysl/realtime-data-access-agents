@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import CardNav from "../../components/CardNav";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000/api/v1";
@@ -40,7 +40,7 @@ export default function Exports() {
     },
   ];
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setErr(null);
     setPresignUrl(null);
@@ -55,12 +55,11 @@ export default function Exports() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [date]);
 
   useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    load();
+  }, [load]);
 
   async function presign(key: string) {
     setErr(null);

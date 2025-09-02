@@ -1,0 +1,39 @@
+name: compose-integration
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "backend/**"
+      - "docker-compose.yml"
+      - ".github/workflows/compose-integration.yml"
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set compose env
+        run: |
+          cp .env.compose .env.ci || true
+          echo "S3_BUCKET=test-bucket" >> .env.ci
+          echo "S3_PREFIX=exports/trades" >> .env.ci
+          echo "AWS_ACCESS_KEY_ID=test" >> .env.ci
+          echo "AWS_SECRET_ACCESS_KEY=test" >> .env.ci
+          echo "AWS_DEFAULT_REGION=us-east-1" >> .env.ci
+
+      - name: Compose up (no S3 profile)
+        run: |
+          docker compose --env-file .env.ci up -d postgres redis
+          docker compose --env-file .env.ci up -d api
+          sleep 8
+          docker compose ps
+
+      - name: Health check API
+        run: |
+          curl -sf http://localhost:8000/api/v1/health | jq .
+      
+      - name: Compose down
+        if: always()
+        run: docker compose --env-file .env.ci down -v --remove-orphans

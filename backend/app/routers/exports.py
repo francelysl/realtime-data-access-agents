@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional
 import os
 import boto3
 from fastapi import APIRouter, HTTPException, Query

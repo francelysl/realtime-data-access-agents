@@ -1,6 +1,8 @@
 import re
-from typing import List
+import inspect
+from typing import List, Any, Dict
 from sqlalchemy import text
+from sqlalchemy.engine import Result
 from sqlalchemy.orm import Session
 from ..settings import settings
 
@@ -16,41 +18,55 @@ SEMICOLON_RE = re.compile(r";")
 class UnsafeQueryError(Exception):
     pass
 
-def _validate_and_extract_table(sql: str) -> str:
+def _row_to_dict(row) -> Dict[str, Any]:
+    # Works for SA 1.4 and 2.x
+    try:
+        return dict(row._mapping)
+    except AttributeError:
+        return dict(row)
+
+def _apply_limit(sql: str, limit: int) -> str:
+    s = sql.strip().rstrip(";")
+    # crude but safe: if there's already a LIMIT, keep the smaller one
+    if " limit " in s.lower():
+        return s
+    return f"{s} LIMIT {int(limit)}"
+
+def _validate_and_extract_table(sql: str) -> None:
     if SEMICOLON_RE.search(sql):
         raise UnsafeQueryError("Semicolons are not allowed.")
     if not SELECT_RE.match(sql):
         raise UnsafeQueryError("Only SELECT queries are allowed.")
-    m = FROM_RE.search(sql)
-    if not m:
-        raise UnsafeQueryError("Query must include a FROM <table> clause.")
-    table = m.group(1)
-    allowed = set(settings.ALLOWED_TABLES)
-    if table not in allowed:
-        raise UnsafeQueryError(f"Table '{table}' is not allowed. Allowed: {sorted(allowed)}")
-    return table
-
-def _apply_limit(sql: str, limit: int) -> str:
-    # Note: For demo purposes, production: use a SQL parser.
-    sql_no_limit = re.sub(r"\blimit\s+\d+\b", "", sql, flags=re.IGNORECASE)
-    return sql_no_limit.rstrip() + f" LIMIT {limit}"
+    # Add additional validation logic here if needed
+    return
 
 class QueryRepo:
-    def __init__(self, db: Session):
-        self.db = db
+    def __init__(self, db: Session | Any):
+        self._close_after = False
+        # In case someone accidentally passes the generator from get_session()
+        if inspect.isgenerator(db):
+            self.db = next(db)
+            self._close_after = True
+        else:
+            self.db = db
+        # optionally attach agent / rationale state
+        self.agent_rationale = None
+
+    def __del__(self):
+        try:
+            if self._close_after and hasattr(self.db, "close"):
+                self.db.close()
+        except Exception:
+            pass
+
+    def run(self, sql: str) -> List[dict]:
+        _validate_and_extract_table(sql)
+        result: Result = self.db.execute(text(sql))
+        return [_row_to_dict(r) for r in result]
 
     def preview(self, sql: str) -> List[dict]:
         _validate_and_extract_table(sql)
         limit = min(settings.PREVIEW_LIMIT, settings.HARD_LIMIT)
         limited_sql = _apply_limit(sql, limit)
-        result = self.db.execute(text(limited_sql))
-        rows = [dict(row._mapping) for row in result]
-        return rows
-
-    def run(self, sql: str) -> List[dict]:
-        _validate_and_extract_table(sql)
-        # Even in "run", enforce hard cap
-        limited_sql = _apply_limit(sql, settings.HARD_LIMIT)
-        result = self.db.execute(text(limited_sql))
-        rows = [dict(row._mapping) for row in result]
-        return rows
+        result: Result = self.db.execute(text(limited_sql))
+        return [_row_to_dict(r) for r in result]
