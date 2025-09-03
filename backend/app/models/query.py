@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from typing import Union, List, Dict
 
 class QueryRequest(BaseModel):
     user_id: str = Field(..., description="Auth user identifier")
@@ -9,5 +10,5 @@ class QueryResponse(BaseModel):
     allowed: bool
     reason: str
     rows: int = 0
-    data_preview: list[dict] | None = None
-    agent_rationale: str | None = None  
+    data_preview: Union[List[Dict], None] = None  
+    agent_rationale: Union[str, None] = None  

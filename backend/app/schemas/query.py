@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from ..db import get_session
 from ..repositories.query_repo import QueryRepo
-from ..schemas.query import QueryRequest, QueryResponse
+from app.schemas.base import QueryRequest, QueryResponse
 from ..settings import settings
 
 router = APIRouter(tags=["query"])

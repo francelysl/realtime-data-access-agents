@@ -1,6 +1,6 @@
 import re
 import inspect
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Union
 from sqlalchemy import text
 from sqlalchemy.engine import Result
 from sqlalchemy.orm import Session
@@ -19,7 +19,6 @@ class UnsafeQueryError(Exception):
     pass
 
 def _row_to_dict(row) -> Dict[str, Any]:
-    # Works for SA 1.4 and 2.x
     try:
         return dict(row._mapping)
     except AttributeError:
@@ -27,7 +26,6 @@ def _row_to_dict(row) -> Dict[str, Any]:
 
 def _apply_limit(sql: str, limit: int) -> str:
     s = sql.strip().rstrip(";")
-    # crude but safe: if there's already a LIMIT, keep the smaller one
     if " limit " in s.lower():
         return s
     return f"{s} LIMIT {int(limit)}"
@@ -37,19 +35,16 @@ def _validate_and_extract_table(sql: str) -> None:
         raise UnsafeQueryError("Semicolons are not allowed.")
     if not SELECT_RE.match(sql):
         raise UnsafeQueryError("Only SELECT queries are allowed.")
-    # Add additional validation logic here if needed
     return
 
 class QueryRepo:
-    def __init__(self, db: Session | Any):
+    def __init__(self, db: Union[Session, Any]):  
         self._close_after = False
-        # In case someone accidentally passes the generator from get_session()
         if inspect.isgenerator(db):
             self.db = next(db)
             self._close_after = True
         else:
             self.db = db
-        # optionally attach agent / rationale state
         self.agent_rationale = None
 
     def __del__(self):

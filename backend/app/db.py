@@ -1,28 +1,34 @@
 import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import NoSuchModuleError
 
-DATABASE_URL = os.environ.get("SRTA_DB_URI", "sqlite+pysqlite:///./srta.db")
+def _normalize_url(url: str) -> str:
+    """
+    Force psycopg v3 driver for any Postgres URL.
+    Converts e.g. postgresql:// or postgresql+psycopg2:// -> postgresql+psycopg://
+    """
+    if not url:
+        return url
+    if url.startswith("postgresql+psycopg://"):
+        return url
+    if url.startswith("postgresql+psycopg2://"):
+        return "postgresql+psycopg://" + url.split("://", 1)[1]
+    if url.startswith("postgres://"):
+        # handle old scheme
+        return "postgresql+psycopg://" + url.split("://", 1)[1]
+    if url.startswith("postgresql://"):
+        return "postgresql+psycopg://" + url.split("://", 1)[1]
+    return url
 
-def _make_engine(url: str):
-    return create_engine(url, pool_pre_ping=True, future=True)
+# Prefer SRTA_DB_URI; fall back to DATABASE_URL; then to a sane default (psycopg v3)
+raw_url = os.getenv("SRTA_DB_URI") or os.getenv("DATABASE_URL") or \
+          "postgresql+psycopg://srta:srta_pw@postgres:5432/srta"
 
-try:
-    engine = _make_engine(DATABASE_URL)
-except NoSuchModuleError as e:
-    # SQLAlchemy 1.4 doesn’t know "postgresql.psycopg"
-    if "postgresql.psycopg" in str(e) and "postgresql+psycopg" in DATABASE_URL:
-        fallback_url = DATABASE_URL.replace("postgresql+psycopg", "postgresql+psycopg2")
-        engine = _make_engine(fallback_url)
-    else:
-        raise
+DATABASE_URL = _normalize_url(raw_url)
 
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, future=True)
 SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False, future=True)
 
 def get_session():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    with SessionLocal() as session:
+        yield session

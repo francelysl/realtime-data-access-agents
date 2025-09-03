@@ -1,10 +1,20 @@
-fastapi>=0.111
-uvicorn[standard]>=0.30
-SQLAlchemy==1.4.54
-psycopg[binary]>=3.2
-pydantic-settings>=2.4
-boto3>=1.34
-redis>=5.0
-pandas==2.3.2
-pyarrow==21.0.0
-python-dotenv>=1.0
+# FastAPI runtime
+fastapi==0.115.0
+starlette==0.38.6
+uvicorn==0.30.6
+pydantic==2.11.7
+pydantic-settings==2.5.2
+python-dotenv==1.1.1
+
+# Database: SQLAlchemy 2 + psycopg v3
+SQLAlchemy==2.0.36
+psycopg==3.2.9
+psycopg-binary==3.2.9
+
+# Utilities you actually use in the API (keep it lean)
+redis==5.0.8
+boto3==1.34.162
+sentry-sdk==2.35.1
+prometheus_client==0.22.1
+requests==2.32.5
+python-multipart==0.0.20

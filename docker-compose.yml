@@ -52,8 +52,8 @@ services:
       dockerfile: backend/Dockerfile.api
     container_name: srta-api
     environment:
-      # SQLAlchemy + psycopg (v3) driver; use postgres service name
       SRTA_DB_URI: ${SRTA_DB_URI:-postgresql+psycopg://srta:srta_pw@postgres:5432/srta}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://srta:srta_pw@postgres:5432/srta}  # Ensure this is passed
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       # S3
       S3_BUCKET: ${S3_BUCKET:-srta-demo-bucket-fl}
@@ -61,9 +61,7 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-test}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-test}
       AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
-      # If using LocalStack profile, the endpoint is the service name
       AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-}
-      # CORS already allows http://localhost:3000 in your app
     depends_on:
       postgres:
         condition: service_healthy

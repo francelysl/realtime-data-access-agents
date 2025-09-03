@@ -1,8 +1,9 @@
 from dataclasses import dataclass
+from typing import Union  
 
 @dataclass
 class AgentSuggestion:
-    rewritten_sql: str | None
+    rewritten_sql: Union[str, None]  
     rationale: str
 
 def suggest_rewrite(sql: str, *, preview: bool) -> AgentSuggestion:

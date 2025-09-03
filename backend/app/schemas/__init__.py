@@ -1,7 +1,7 @@
 """Public routers package exports."""
 
-from . import health as health  
+from ..routers import health as health  
 from . import query as query   
-from . import exports as exports 
+from ..routers import exports as exports 
 
 __all__ = ["health", "query", "exports"]

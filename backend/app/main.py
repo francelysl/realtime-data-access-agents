@@ -1,8 +1,10 @@
 # backend/app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from .schemas import query
 from .settings import settings
-from .routers import health, query, exports
+from .routers import health, exports
 
 app = FastAPI(title="SRTA Agents API") 
 

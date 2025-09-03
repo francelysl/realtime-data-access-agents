@@ -9,7 +9,7 @@ def test_agent_preview_limit_toggle(monkeypatch):
     import app.settings as settings_mod
     reload(settings_mod)  
 
-    import app.routers.query as query_mod
+    import backend.app.schemas.query as query_mod
     reload(query_mod)    
 
     import app.main as main_mod
