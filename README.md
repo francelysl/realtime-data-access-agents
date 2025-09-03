@@ -1,4 +1,5 @@
 ## Real-Time Data Access Platform with Intelligent Query Agents v2
+![UI Mock](frontend/components/Homepage.png "UI Mock")
 
 ## Introduction & Background
 Modern enterprises generate massive volumes of structured and unstructured data across operational systems, cloud services, and event streams. However, extracting **reliable, governed, and queryable insights** often requires significant engineering effort.
@@ -137,11 +138,11 @@ docker compose down -v
 ```
 
 ## **Usage**
-Query Dashboard → Enter SQL queries, preview results, view agent rewrites & rationale.
+**Query Dashboard** → Enter SQL queries, preview results, view agent rewrites & rationale.
 
-Exports → Download datasets to S3-compatible storage.
+**Exports** → Download datasets to S3-compatible storage.
 
-Agent Rationale Panel → Understand why a query was modified, approved, or blocked.
+**Agent Rationale Panel** → Understand why a query was modified, approved, or blocked.
 
 ## **CI/CD**
 GitHub Actions run automatically:
@@ -155,9 +156,7 @@ GitHub Actions run automatically:
 ----
 Tagging a release triggers **deploy-staging** (or **deploy-prod**) to pull the latest images and restart the stack on your host.
 
-
 ## **Next Steps**
 - Finalize the integration of intelligent query agents with additional guardrails.
 - Expand the platform to support more data sources and formats.
 - Improve the user interface for better transparency and usability.
- 
